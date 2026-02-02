@@ -4,166 +4,298 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KT CS 대전무선 - SR 판독기 (멀티 초이스)</title>
+    <title>KT CS 대전무선 - 2026 SR 판독기 (Deep Learning Ver)</title>
     <style>
-        body { font-family: 'Malgun Gothic', sans-serif; background-color: #f0f2f5; margin: 0; padding: 20px; }
-        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); border: 1px solid #dcdcdc; }
+        /* KT Brand Colors: Red(#eb003c), Black(#222), Gray(#f4f4f4) */
+        body { font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif; background-color: #f0f2f5; margin: 0; padding: 20px; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 16px; box-shadow: 0 4px 25px rgba(0,0,0,0.08); border: 1px solid #dcdcdc; }
         
-        h1 { color: #111; text-align: center; margin-bottom: 5px; font-weight: 800; letter-spacing: -1px; }
-        .brand { color: #eb003c; } 
-        .badge { background: #eb003c; color: #fff; padding: 4px 12px; border-radius: 20px; font-size: 13px; font-weight: 600; display: inline-block; margin-bottom: 25px; }
+        header { text-align: center; margin-bottom: 30px; }
+        h1 { color: #111; margin: 5px 0; font-weight: 800; letter-spacing: -1px; font-size: 28px; }
+        .sub-title { color: #666; font-size: 15px; }
+        .badge { background: #eb003c; color: #fff; padding: 5px 15px; border-radius: 20px; font-size: 13px; font-weight: 700; display: inline-block; margin-bottom: 10px; box-shadow: 0 2px 5px rgba(235, 0, 60, 0.3); }
         
-        textarea { width: 100%; height: 100px; padding: 15px; border: 2px solid #ddd; border-radius: 12px; font-size: 17px; resize: none; background-color: #fafafa; outline: none; transition: 0.3s; }
-        textarea:focus { border-color: #eb003c; background-color: #fff; }
-        
-        button { width: 100%; background-color: #222; color: white; padding: 16px; border: none; border-radius: 12px; font-size: 19px; font-weight: bold; cursor: pointer; margin-top: 15px; transition: 0.2s; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
-        button:hover { background-color: #444; }
+        .input-section { position: relative; margin-bottom: 25px; }
+        textarea { width: 100%; height: 120px; padding: 18px; border: 2px solid #e1e1e1; border-radius: 12px; font-size: 17px; resize: none; background-color: #fafafa; outline: none; transition: 0.3s; font-family: inherit; }
+        textarea:focus { border-color: #eb003c; background-color: #fff; box-shadow: 0 0 0 4px rgba(235,0,60,0.1); }
+        textarea::placeholder { color: #aaa; }
 
-        /* 결과 리스트 스타일 */
-        #resultContainer { margin-top: 30px; display: none; }
+        button { width: 100%; background-color: #222; color: white; padding: 18px; border: none; border-radius: 12px; font-size: 20px; font-weight: bold; cursor: pointer; transition: 0.2s; box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
+        button:hover { background-color: #444; transform: translateY(-2px); }
+        button:active { transform: translateY(0); }
+
+        /* 결과 리스트 스타일 (멀티뷰) */
+        #resultContainer { margin-top: 35px; display: none; }
         
         .result-card { 
             background: #fff; 
-            border: 1px solid #e0e0e0; 
-            border-left: 6px solid #ccc; /* 기본 색상 */
-            padding: 20px; 
-            border-radius: 8px; 
+            border: 1px solid #eee; 
+            border-left: 5px solid #ccc; /* 기본 순위 색상 */
+            padding: 25px; 
+            border-radius: 10px; 
             margin-bottom: 15px; 
-            transition: 0.2s;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            transition: 0.3s;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.03);
+            position: relative;
         }
         
-        /* 1순위 추천 강조 */
+        /* 1순위 강조 스타일 */
         .result-card.best-match {
-            border-left-color: #eb003c;
+            border-left: 6px solid #eb003c;
             background-color: #fffbfc;
             border-color: #ffccd5;
-            box-shadow: 0 4px 12px rgba(235, 0, 60, 0.1);
+            box-shadow: 0 5px 15px rgba(235, 0, 60, 0.1);
+            transform: scale(1.01);
         }
 
-        .rank-badge { font-size: 12px; font-weight: bold; color: #fff; background: #999; padding: 2px 8px; border-radius: 4px; margin-bottom: 5px; display: inline-block; }
-        .best-match .rank-badge { background: #eb003c; }
+        .rank-label { 
+            font-size: 12px; font-weight: 800; color: #fff; 
+            background: #999; padding: 4px 10px; border-radius: 4px; 
+            margin-bottom: 8px; display: inline-block; 
+            text-transform: uppercase;
+        }
+        .best-match .rank-label { background: #eb003c; }
 
-        .sr-code { font-size: 22px; font-weight: 800; color: #222; margin-bottom: 8px; display: block; line-height: 1.3; }
-        .reason { font-size: 15px; color: #555; line-height: 1.5; margin-bottom: 10px; }
+        .sr-code { font-size: 24px; font-weight: 800; color: #222; margin-bottom: 10px; display: block; line-height: 1.3; word-break: keep-all; }
+        .reason { font-size: 16px; color: #444; line-height: 1.6; margin-bottom: 12px; }
         
-        .match-detail { font-size: 13px; color: #eb003c; font-weight: bold; background: #f0f0f0; padding: 5px 10px; border-radius: 6px; display: inline-block; }
-        .best-match .match-detail { background: #ffe6ea; }
+        .keyword-box { font-size: 13px; color: #666; background: #f4f4f4; padding: 8px 12px; border-radius: 6px; display: inline-block; }
+        .highlight { color: #eb003c; font-weight: bold; }
+
+        .footer { text-align: center; margin-top: 40px; color: #999; font-size: 12px; border-top: 1px solid #eee; padding-top: 20px; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div style="text-align:center;">
-        <span class="badge">V9.0 (중복 검색 / 멀티뷰 지원)</span>
-    </div>
-    <h1><span class="brand">KT CS</span> 지능형 SR 판독기</h1>
-    <p style="text-align:center; color:#666; font-size:15px; margin-bottom:30px;">
-        상황이 애매할 땐 <strong>모든 가능성</strong>을 보여줍니다. 가장 적절한 것을 고르세요.
-    </p>
+    <header>
+        <span class="badge">2026.02.02 사례집 반영 완료</span>
+        <h1><span style="color:#eb003c;">KT CS</span> 스마트 SR 판독기</h1>
+        <p class="sub-title">무선 사례 심층 학습 & 멀티뷰 분석 엔진 탑재</p>
+    </header>
     
-    <textarea id="inputText" placeholder="상담 내용을 입력하세요.&#13;&#10;예시: 500건 차단됐는데 자동해제가 안 된다고 함"></textarea>
-    <button onclick="analyzeSR()">판독하기 (Enter)</button>
+    <div class="input-section">
+        <textarea id="inputText" placeholder="상담 내용을 자유롭게 입력하세요.&#13;&#10;예시: 500건 차단됐는데 자동해제가 안돼요 / 로밍 데이터 차단하고 싶어요 / 군정지 문의"></textarea>
+    </div>
+    <button onclick="analyzeSR()">SR 코드 분석 (Enter)</button>
     
     <div id="resultContainer"></div>
+
+    <div class="footer">
+        데이터 출처: 2026년_유무선 SRTT 사례집_AIDT혁신센터_26.02.02.xlsx<br>
+        Developed for Team Leader Jeong Daewoo
+    </div>
 </div>
 
 <script>
-    // =========================================================
-    // [KT CS 대전무선] V9.0 데이터베이스
-    // ★핵심: 동일한 상황이라도 '미세한 조건'에 따라 여러 규칙을 생성함
-    // =========================================================
-    var srRules = [
+    // =============================================================================
+    // [심층 학습 데이터베이스] 2026년 사례집 기반 (무선 강화 + 멀티뷰 로직)
+    // =============================================================================
+    
+    /* [로직 설명]
+       keywords: 기본 점수 10점 (하나라도 있으면 후보 등록)
+       subKeywords: 가중치 30점 (상황을 구체적으로 특정하는 핵심 단어)
+       exclude: -1000점 (해당 단어가 있으면 과감히 제외)
+    */
+
+    var srDatabase = [
         
-        // ================= [1. 무선 특수: 스팸/500건 (4가지 상황 분리)] =================
+        // =================================================================
+        // [1] 무선 특화: 스팸/이용정지 (매뉴얼 기반 초정밀 분기)
+        // =================================================================
         {
-            // Case 1: 자동해제 실패 (팀장님 강조)
-            keywords: ["500건", "스팸", "차단"],
-            subKeywords: ["자동", "안풀려", "다음날", "안됨", "실패"], // 이게 있어야 이 규칙이 발동
+            // Case: 자동해제 실패 (팀장님 강조 사항)
+            keywords: ["500건", "스팸", "문자차단", "이용정지"],
+            subKeywords: ["자동", "안풀려", "다음날", "안됨", "실패", "지났는데"], 
             exclude: [],
             code: "변경/조회 > 일시정지/해제 > 일시정지해제문의",
-            reason: "★중요: 일 500건 차단 후, 다음날 '자동 해제'가 시스템상 안 되어 문의한 경우입니다."
+            reason: "⚠️ <strong>[자동해제 실패]</strong> 일 500건 차단 후, 다음날 0시가 지났음에도 시스템상 자동 해제가 되지 않아 문의한 건입니다."
         },
         {
-            // Case 2: 1선 종결/수긍
+            // Case: 1선 종결/수긍 (매뉴얼 사례 반영)
             keywords: ["500건", "스팸", "이용정지"],
-            subKeywords: ["종결", "수긍", "완결", "1선", "처리", "설명"],
-            exclude: ["이관", "부서"],
+            subKeywords: ["종결", "수긍", "완결", "1선", "처리", "설명", "안내후"],
+            exclude: ["이관", "부서", "해줘"],
             code: "변경/조회 > 일시정지/해제 > 일시정지해제문의",
-            reason: "★중요: 스팸/이용정지 건이지만, 이관하지 않고 상담사가 설명하여 '고객 수긍 후 종결'된 건입니다."
+            reason: "✅ <strong>[1선 종결]</strong> 스팸/이용정지 건이지만, 이관하지 않고 상담사가 안내하여 고객이 수긍하고 상담이 종결된 건입니다."
         },
         {
-            // Case 3: 일반 해제 요청 (가장 기본)
-            keywords: ["500건", "스팸", "문자차단", "문자제한", "이용정지", "발송차단"],
-            subKeywords: [], // 필수 조건 없음 (기본값)
+            // Case: 일반 해제 요청 (실제 액션 필요)
+            keywords: ["500건", "스팸", "문자차단", "문자제한", "발송차단"],
+            subKeywords: ["풀어", "해제", "사용", "못보내", "안가요"],
             exclude: ["종결", "수긍", "자동", "예외"],
             code: "변경/조회 > 일시정지/해제 > 일500건이용정지해제",
-            reason: "일반적인 문자 대량 발송(500건 초과) 차단 해제 요청입니다. (스팸팀 이관 등)"
+            reason: "문자 대량 발송(500건 초과)으로 인한 일반적인 이용정지 해제 요청입니다."
         },
         {
-            // Case 4: 예외 등록
-            keywords: ["예외등록", "500건예외", "택배", "대리", "생계"],
-            subKeywords: [],
+            // Case: 예외 등록 (택배/생계)
+            keywords: ["예외등록", "500건예외"],
+            subKeywords: ["택배", "대리", "운송", "생계", "업무", "많이"],
             exclude: [],
             code: "변경/조회 > 일시정지/해제 > 일500건예외등록",
-            reason: "업무상(택배, 대리 등) 문자 발송이 많아 차단 예외 등록을 요청하는 경우입니다."
+            reason: "업무 특성상 문자 발송이 많은 고객(택배, 대리운전 등)의 차단 예외 등록 요청입니다."
         },
 
-        // ================= [2. 무선 로밍 (디테일 분기)] =================
+        // =================================================================
+        // [2] 무선 특화: 로밍 (가입/해지 vs 조회/확인 구분)
+        // =================================================================
         {
-            keywords: ["로밍", "해외"],
-            subKeywords: ["가입", "해지", "차단", "변경", "신청", "돼지코"],
-            exclude: ["조회", "확인"],
+            // Action: 변경이 일어나는 경우
+            keywords: ["로밍", "해외", "데이터로밍", "돼지코"],
+            subKeywords: ["가입", "해지", "차단", "신청", "변경", "안할래", "막아", "쓰고싶어"],
+            exclude: ["조회", "확인", "잔여"],
             code: "변경/조회 > 상품변경 > 로밍부가서비스변경/해지",
-            reason: "해외 로밍 서비스의 가입, 해지, 차단, 변경 등 '상태를 바꾸는' 업무입니다."
+            reason: "해외 로밍 서비스의 가입, 해지, 데이터 차단 신청 등 <strong>상태 변경</strong> 업무입니다."
         },
         {
+            // Info: 정보 확인만 하는 경우
             keywords: ["로밍", "해외", "데이터"],
-            subKeywords: ["조회", "확인", "얼마", "잔여", "남았"],
-            exclude: ["해지", "가입", "차단"],
+            subKeywords: ["조회", "확인", "얼마", "잔여", "남았", "제공량", "되어있나"],
+            exclude: ["해지", "가입", "차단", "신청"],
             code: "변경/조회 > 상품변경 > 로밍부가서비스조회/확인",
-            reason: "단순히 로밍 가입 여부나 데이터 잔여량을 '확인'하는 업무입니다."
+            reason: "로밍 상품 가입 여부 확인, 데이터 잔여량 조회 등 <strong>단순 정보 확인</strong> 업무입니다."
         },
 
-
-        // ================= [3. 무선 기기/유심 (OMD 등)] =================
+        // =================================================================
+        // [3] 무선 특화: 기기/유심/자급제 (매뉴얼 무선사례 반영)
+        // =================================================================
         {
-            keywords: ["자급제", "중고폰", "유심", "등록"],
-            subKeywords: ["기변", "변경", "OMD", "맥", "MAC", "모델명"],
+            // 자급제/OMD 등록
+            keywords: ["자급제", "중고폰", "유심", "공기계"],
+            subKeywords: ["등록", "OMD", "맥", "MAC", "모델명", "일련번호", "인식안됨"],
             exclude: [],
             code: "변경/조회 > 개인정보 > 개인정보 관련 문의",
-            reason: "자급제/중고폰 사용을 위한 기기등록(OMD) 및 유심기변 처리 건입니다."
+            reason: "자급제/중고폰 사용을 위한 기기등록(OMD/MAC) 및 유심 기변 관련 전산 처리입니다."
         },
         {
+            // 일반 기기변경 문의
             keywords: ["기변", "기기변경", "폰교체"],
-            subKeywords: ["문의", "방법", "새폰", "재고"],
+            subKeywords: ["문의", "방법", "새폰", "재고", "아이폰", "갤럭시", "출시"],
             exclude: ["보상", "유심", "분실"],
             code: "변경/조회 > 기기변경 > 기기변경 문의",
-            reason: "일반적인 단말기 교체 절차 및 재고 문의입니다."
+            reason: "일반적인 단말기 교체 절차, 신규 단말기 재고 및 출시일 문의입니다."
+        },
+        {
+            // 보상기변 (반납 조건)
+            keywords: ["보상기변", "보상", "반납", "권리실행"],
+            subKeywords: ["얼마쳐줘", "지원금", "가격", "혜택", "프로그램"],
+            exclude: ["분실"],
+            code: "변경/조회 > 기기변경 > 보상기변 문의",
+            reason: "기존 단말기를 반납하고 보상받는 혜택(보상기변/슈퍼체인지 등) 관련 문의입니다."
         },
 
-
-        // ================= [4. 무선 정지/해제 (분실 vs 일반)] =================
+        // =================================================================
+        // [4] 무선 특화: 정지/해제 (분실 vs 일반 장기)
+        // =================================================================
         {
-            keywords: ["분실", "잃어버", "도난"],
-            subKeywords: ["정지", "신고", "습득"],
+            // 분실 정지 (보험 미가입/미확인)
+            keywords: ["분실", "잃어버", "도난", "습득"],
+            subKeywords: ["정지", "신고", "없어졌"],
             exclude: ["파손", "보험가입"],
             code: "변경/조회 > 일시정지/해제 > 분실/고장접수(단말보험_미가입자)신청",
-            reason: "휴대폰 분실로 인한 정지 요청입니다. (보험 미확인)"
+            reason: "휴대폰 분실/도난으로 인한 발신/착신 정지 요청입니다. (보험 미확인)"
         },
         {
+            // 장기 정지 (군대, 해외)
             keywords: ["정지", "일시정지"],
-            subKeywords: ["군대", "유학", "해외", "장기", "입대"],
-            exclude: [],
+            subKeywords: ["군대", "유학", "해외", "장기", "입대", "어학연수", "이민"],
+            exclude: ["분실"],
             code: "변경/조회 > 일시정지/해제 > 일시정지문의",
-            reason: "군대, 유학, 해외체류 등 장기적인 사유로 인한 정지 문의입니다."
+            reason: "군 입대, 해외 체류 등 장기적인 사유로 인한 일시정지 문의입니다."
         },
         {
+            // 정지 해제 (복구)
             keywords: ["해제", "정지해제"],
-            subKeywords: ["풀어", "다시", "귀국", "복구"],
+            subKeywords: ["풀어", "다시", "귀국", "복구", "돌아왔"],
             exclude: ["스팸", "500건"],
             code: "변경/조회 > 일시정지/해제 > 일시정지해제문의",
-            reason: "일반 일시정지 상태를 해제하여 다시 사용하려는 문의입니다."
+            reason: "일시정지된 상태를 해제하여 다시 사용(부활)하려는 문의입니다."
+        },
+
+        // =================================================================
+        // [5] 무선 특화: 부가서비스/요금/결합
+        // =================================================================
+        {
+            // 투폰/투넘버
+            keywords: ["투폰", "투넘버", "듀얼번호"],
+            subKeywords: ["신청", "가입", "번호두개", "업무용"],
+            exclude: ["변경"],
+            code: "가입 > 가입문의 > 신규가입신청",
+            reason: "투폰(듀얼번호) 부가서비스 신규 가입 신청입니다."
+        },
+        {
+            keywords: ["투폰", "투넘버", "듀얼번호"],
+            subKeywords: ["변경", "바꾸"],
+            exclude: ["신청"],
+            code: "변경/조회 > 계약변경 > 번호변경 및 취소 문의/확인",
+            reason: "사용 중인 투폰/듀얼번호의 '번호 변경' 문의입니다."
+        },
+        {
+            // 데이터 쉐어링
+            keywords: ["데이터쉐어링", "데쉐", "투게더", "공유"],
+            subKeywords: ["신청", "설정", "워치", "패드", "나눠"],
+            exclude: [],
+            code: "변경/조회 > 상품변경 > 상품/서비스확인및변경문의",
+            reason: "데이터 쉐어링, 데이터 투게더 결합 및 설정 문의입니다."
+        },
+        {
+            // 소액결제/콘텐츠
+            keywords: ["소액결제", "콘텐츠", "휴대폰결제"],
+            subKeywords: ["차단", "한도", "변경", "결제안돼", "다날"],
+            exclude: [],
+            code: "변경/조회 > 상품변경 > 상품/서비스확인및변경문의",
+            reason: "소액결제/콘텐츠이용료 차단 및 한도 변경, 이용내역 관련 문의입니다."
+        },
+        {
+            // 요금제 하향 (180일 이슈)
+            keywords: ["요금제", "180일"],
+            subKeywords: ["하향", "낮추", "대리점", "위약금"],
+            exclude: [],
+            code: "변경/조회 > 계약변경 > 요금제 변경(대리점이관용)",
+            reason: "개통 180일 이내 요금제 하향 요청 건으로, 대리점 이관이 필요한 경우입니다."
+        },
+        {
+            // 결합 (무선 사례집 반영)
+            keywords: ["결합", "뭉치면", "총액", "가족"],
+            subKeywords: ["할인", "추가", "묶어", "변경", "확인"],
+            exclude: ["신규"],
+            code: "변경/조회 > 상품변경 > 상품/서비스확인및변경문의",
+            reason: "유무선 결합상품(총액결합 등) 정보 확인 및 구성원 변경 문의입니다."
+        },
+
+        // =================================================================
+        // [6] 유선/공통 필수 항목 (가입/개통)
+        // =================================================================
+        {
+            // 최우선 불만
+            keywords: ["14일", "철회", "개통취소"],
+            subKeywords: ["품질", "불량", "반품", "맘에안들어"],
+            exclude: ["자가개통"],
+            code: "가입 > 가입불만 > 판매단말기 불만 > 철회(14일)",
+            reason: "🚨 <strong>[최우선]</strong> 개통 14일 이내 통화품질/단말불량 사유로 인한 철회 요청입니다."
+        },
+        {
+            // 가입 (권유 vs 문의)
+            keywords: ["가입", "신청"],
+            subKeywords: ["권유", "제안", "전화와서", "상담사가"],
+            exclude: [],
+            code: "가입 > 가입권유 > IT권유", // 무선이면 M권유지만 문맥상 권유로 통합 추천
+            reason: "고객 요청이 아닌, 상담사의 권유(Outbound)로 인해 가입이 진행된 건입니다."
+        },
+        {
+            keywords: ["가입", "신청"],
+            subKeywords: ["문의", "조건", "혜택", "사은품", "얼마"],
+            exclude: ["권유"],
+            code: "가입 > 가입문의 > 신규가입 문의",
+            reason: "가입을 확정하지 않고 조건/혜택을 알아보는 단순 문의 단계입니다."
+        },
+        {
+            // 번호이동
+            keywords: ["번호이동", "MNP", "번이"],
+            subKeywords: ["통신사", "SK", "LG", "이동"],
+            exclude: ["권유", "불승인"],
+            code: "가입 > 가입문의 > 번호이동문의",
+            reason: "타 통신사에서 KT로 넘어오는 번호이동(MNP) 문의입니다."
         }
     ];
 
@@ -171,19 +303,20 @@
         var text = document.getElementById("inputText").value;
         var resultContainer = document.getElementById("resultContainer");
 
-        if (!text.trim()) { alert("내용을 입력해주세요!"); return; }
+        if (!text.trim()) { alert("상담 내용을 입력해주세요!"); return; }
 
-        var cleanText = text.replace(/ /g, "").replace(/-/g, "").replace(/_/g, "");
+        // 1. 텍스트 전처리: 띄어쓰기, 특수문자 제거로 매칭률 극대화
+        var cleanText = text.replace(/ /g, "").replace(/-/g, "").replace(/_/g, "").replace(/\./g, "");
         var candidates = [];
 
-        // 모든 규칙 검사
-        for (var i = 0; i < srRules.length; i++) {
-            var rule = srRules[i];
+        // 2. 모든 규칙 검사
+        for (var i = 0; i < srDatabase.length; i++) {
+            var rule = srDatabase[i];
             var score = 0;
             var matchedMain = [];
             var matchedSub = [];
 
-            // 1. 메인 키워드 검사 (기본 점수)
+            // 메인 키워드 검사 (기본 10점)
             for (var j = 0; j < rule.keywords.length; j++) {
                 if (cleanText.indexOf(rule.keywords[j]) !== -1) {
                     score += 10;
@@ -191,30 +324,30 @@
                 }
             }
 
-            // 2. 서브 키워드 검사 (가중치 점수 - 상황을 구체화하는 단어)
+            // 서브 키워드 검사 (가중치 30점 - 문맥 결정의 핵심)
             if (rule.subKeywords && rule.subKeywords.length > 0) {
                 var subFound = false;
                 for (var s = 0; s < rule.subKeywords.length; s++) {
                     if (cleanText.indexOf(rule.subKeywords[s]) !== -1) {
-                        score += 30; // 서브 키워드가 있으면 점수 대폭 상승
+                        score += 30; 
                         matchedSub.push(rule.subKeywords[s]);
                         subFound = true;
                     }
                 }
-                // 서브 키워드가 필수인데 하나도 없으면 점수 깎음 (단, 일반 룰은 제외)
-                // if (!subFound) score -= 5; 
+                // 만약 서브키워드가 정의되어 있는데 하나도 발견 못하면 점수 약간 감점 (우선순위 하락)
+                if (!subFound && score > 0) score -= 5;
             }
 
-            // 3. 제외어 검사 (탈락)
+            // 제외어 검사 (발견 시 즉시 탈락급 감점)
             if (rule.exclude) {
                 for (var k = 0; k < rule.exclude.length; k++) {
                     if (cleanText.indexOf(rule.exclude[k]) !== -1) {
-                        score = -999;
+                        score = -9999;
                     }
                 }
             }
 
-            // 점수가 0점 이상인 후보는 모두 수집
+            // 유효한 후보군 수집
             if (score > 0 && matchedMain.length > 0) {
                 candidates.push({
                     rule: rule,
@@ -224,38 +357,47 @@
             }
         }
 
-        // 결과 출력
+        // 3. 결과 출력
         resultContainer.style.display = "block";
         resultContainer.innerHTML = "";
 
         if (candidates.length === 0) {
-            resultContainer.innerHTML = "<div class='result-card' style='text-align:center; color:#666;'>❓ 판독 가능한 결과가 없습니다.<br>검색어(500건, 로밍, 정지 등)를 포함해 주세요.</div>";
+            resultContainer.innerHTML = `
+                <div class="result-card" style="text-align:center; color:#666; border-left-color:#999;">
+                    <span class="sr-code">❓ 분석 불가</span>
+                    <div class="reason">입력하신 내용에서 핵심 키워드를 찾지 못했습니다.<br>
+                    '스팸', '로밍', '500건', '요금제' 등 구체적인 단어를 포함해 주세요.</div>
+                </div>`;
             return;
         }
 
         // 점수순 정렬
         candidates.sort(function(a, b) { return b.score - a.score });
 
-        // 리스트 생성
-        for (var c = 0; c < candidates.length; c++) {
+        // 상위 3개까지만 보여주거나, 점수 차이가 크면 1개만 보여주는 로직도 가능하지만,
+        // 멀티뷰 요청에 따라 후보군을 모두 보여주되 랭킹 표시
+        var limit = Math.min(candidates.length, 3); // 최대 3개까지만 표시 (너무 많으면 혼란)
+        
+        for (var c = 0; c < limit; c++) {
             var item = candidates[c];
-            var isBest = (c === 0); // 1등만 강조
-            
-            var tagHtml = item.tags.map(t => "#" + t).join(" ");
+            var isBest = (c === 0);
+            var tagHtml = item.tags.map(t => `<span class="highlight">${t}</span>`).join(", ");
 
             var html = `
                 <div class="result-card ${isBest ? 'best-match' : ''}">
-                    <span class="rank-badge">${isBest ? '⭐ 최우선 추천' : (c+1) + '순위 후보'}</span>
+                    <span class="rank-label">${isBest ? '★ 최우선 추천 (Best)' : (c+1) + '순위 후보'}</span>
                     <span class="sr-code">${item.rule.code}</span>
                     <div class="reason">${item.rule.reason}</div>
-                    <div class="match-detail">감지된 단어: ${tagHtml}</div>
+                    <div class="keyword-box">
+                        감지된 키워드: ${tagHtml}
+                    </div>
                 </div>
             `;
             resultContainer.innerHTML += html;
         }
     }
 
-    // 엔터키 지원
+    // 엔터키 실행 지원
     document.getElementById("inputText").addEventListener("keypress", function(e) {
         if (e.key === "Enter") {
             e.preventDefault();
